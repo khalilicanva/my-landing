@@ -84,8 +84,23 @@ function applyLang(){
 
 applyLang();
 
-def login(){ if(username.value && password.value){ localStorage.user=username.value; startApp(); }}
-def signup(){ login(); }
+function login(){
+  if(username.value && password.value){
+    localStorage.user = username.value;
+    startApp();
+  } else {
+    alert(lang === "fa" ? "لطفاً همه فیلدها را پر کنید" : "Please fill all fields");
+  }
+}}
+function signup(){
+  if(username.value && password.value){
+    localStorage.user = username.value;
+    alert(lang === "fa" ? "ثبت‌نام انجام شد!" : "Signup successful!");
+    startApp();
+  } else {
+    alert(lang === "fa" ? "لطفاً همه فیلدها را پر کنید" : "Please fill all fields");
+  }
+}
 
 function startApp(){ document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; initMap(); loadFeed(); }
 if(localStorage.user) startApp();
