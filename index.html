@@ -1,398 +1,178 @@
-import React, { useEffect, useState, useRef } from "react";
-/*
-WorldMapSocial - Single-file React app (Tailwind + React-Leaflet)
+<!doctype html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WorldMap Demo (single file)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;direction:rtl}
+    #map{height:420px;border-radius:8px}
+    .panel{background:#fff;padding:12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+    .row{display:flex;gap:8px;align-items:center}
+    input,select,button,textarea{padding:8px;border:1px solid #ddd;border-radius:6px}
+    img.preview{max-height:120px;border-radius:6px;margin-top:8px}
+    .post{border:1px solid #eee;padding:8px;border-radius:6px;background:#fafafa}
+    .small{font-size:13px;color:#444}
+  </style>
+</head>
+<body>
+  <div style="max-width:1000px;margin:18px auto;">
+    <h2>دموی ساده — نقشه، آپلود تصویر، فید و چت (local)</h2>
 
-Features implemented (client-side, no backend required):
-1. Interactive world map (click or search) — selects country and shows basic info (population) via restcountries API + Nominatim reverse geocoding.
-2. Choose or type cities for the selected country.
-3. Upload a photo and pin it to a chosen city (posts saved to localStorage so the demo works immediately).
-4. Public feed where others (local users of the same browser) can see photos, comment, like, and share (using Web Share or copy link).
-5. Simple AI chat panel that answers country-related questions. If you paste an OpenAI API key into the chat settings, it will call OpenAI; otherwise a smart fallback uses the fetched country data.
+    <div id="map" class="panel"></div>
 
-How to run (dev):
-- Create a React app (Vite recommended) and install these deps:
-  npm install react-leaflet leaflet uuid
-- Put this file under src/App.jsx and run the dev server.
-- Tailwind is used in classNames; you may also run without Tailwind (styles will still be readable).
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:12px;margin-top:12px;">
+      <div class="panel">
+        <div class="small">موقعیت انتخاب‌شده:</div>
+        <div id="selInfo" class="small">روی نقشه کلیک کنید.</div>
 
-Notes & TODOs for production:
-- Replace localStorage persistence with a real backend (uploads, DB, moderation).
-- Add authentication, user profiles, and image hosting (S3/Cloudinary).
-- Harden AI chat: move OpenAI key usage to server to avoid exposing keys.
-
-*/
-
-// Imports for react-leaflet — if your bundler complains, install react-leaflet + leaflet CSS
-import { MapContainer, TileLayer, useMapEvents, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-// small helper icon fix for leaflet default marker
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
-});
-
-import { v4 as uuidv4 } from "uuid";
-
-const LOCAL_KEY = "worldmapsocial_posts_v1";
-
-function useLocalPosts() {
-  const [posts, setPosts] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LOCAL_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-  useEffect(() => {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(posts));
-  }, [posts]);
-  return [posts, setPosts];
-}
-
-function MapClick({ onSelectLocation }) {
-  useMapEvents({
-    click: async (e) => {
-      const { lat, lng } = e.latlng;
-      // reverse geocode using Nominatim
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-        );
-        const data = await res.json();
-        const country = data.address?.country;
-        const country_code = data.address?.country_code?.toUpperCase();
-        const city = data.address?.city || data.address?.town || data.address?.village || data.address?.hamlet || data.address?.county;
-        onSelectLocation({ lat, lng, country, country_code, city });
-      } catch (err) {
-        console.error(err);
-        onSelectLocation({ lat, lng });
-      }
-    },
-  });
-  return null;
-}
-
-export default function App() {
-  const [selected, setSelected] = useState(null); // {lat,lng,country,country_code,city}
-  const [countryInfo, setCountryInfo] = useState(null);
-  const [cities, setCities] = useState([]);
-  const [posts, setPosts] = useLocalPosts();
-  const [queryCity, setQueryCity] = useState("");
-  const [filePreview, setFilePreview] = useState(null);
-  const [aiApiKey, setAiApiKey] = useState("");
-  const [chatMessages, setChatMessages] = useState([]);
-  const fileRef = useRef();
-
-  useEffect(() => {
-    if (selected?.country) {
-      // fetch country info from restcountries
-      (async () => {
-        try {
-          const res = await fetch(
-            `https://restcountries.com/v3.1/alpha/${selected.country_code}`
-          );
-          const arr = await res.json();
-          const info = arr?.[0];
-          setCountryInfo(info || null);
-
-          // populate sample cities list (small curated fallback). In prod use a cities API.
-          const sample = sampleCitiesForCountry(info?.cca2 || selected.country_code);
-          setCities(sample);
-          setQueryCity(sample[0] || selected.city || "");
-        } catch (e) {
-          console.error(e);
-          setCountryInfo(null);
-        }
-      })();
-    }
-  }, [selected]);
-
-  // upload handler: store as base64 in localStorage (for demo only)
-  async function handleUpload(e) {
-    e.preventDefault();
-    const file = fileRef.current.files[0];
-    if (!file || !queryCity || !selected?.country) {
-      alert("یک تصویر، کشور و شهر را انتخاب کنید.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const id = uuidv4();
-      const newPost = {
-        id,
-        country: selected.country,
-        country_code: selected.country_code,
-        city: queryCity,
-        lat: selected.lat,
-        lng: selected.lng,
-        author: "Anonymous",
-        image: reader.result,
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        comments: [],
-      };
-      setPosts((p) => [newPost, ...p]);
-      setFilePreview(null);
-      fileRef.current.value = null;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function toggleLike(postId) {
-    setPosts((p) =>
-      p.map((x) => (x.id === postId ? { ...x, likes: x.likes + 1 } : x))
-    );
-  }
-
-  function addComment(postId, text) {
-    setPosts((p) =>
-      p.map((x) =>
-        x.id === postId
-          ? { ...x, comments: [...x.comments, { id: uuidv4(), text, createdAt: new Date().toISOString() }] }
-          : x
-      )
-    );
-  }
-
-  async function askAI(question) {
-    if (!selected?.country) return alert("ابتدا یک کشور انتخاب کنید.");
-    const prompt = `Country: ${selected.country}\nUser Q: ${question}`;
-    setChatMessages((m) => [...m, { role: "user", text: question }]);
-
-    // If user provided OpenAI key, call OpenAI (client-side) — note: exposing key is insecure!
-    if (aiApiKey) {
-      try {
-        const res = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${aiApiKey}`,
-          },
-          body: JSON.stringify({ model: "gpt-4o-mini", messages: [{ role: "system", content: `You are an assistant about the country ${selected.country}` }, { role: "user", content: question }], max_tokens: 400 }),
-        });
-        const json = await res.json();
-        const aiText = json?.choices?.[0]?.message?.content || "No response";
-        setChatMessages((m) => [...m, { role: "assistant", text: aiText }]);
-      } catch (err) {
-        console.error(err);
-        setChatMessages((m) => [...m, { role: "assistant", text: "خطا در تماس با سرویس هوش مصنوعی." }]);
-      }
-    } else {
-      // fallback: answer from countryInfo data
-      const answer = fallbackAnswerFromCountry(selected, countryInfo, question);
-      setChatMessages((m) => [...m, { role: "assistant", text: answer }]);
-    }
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">WorldMapSocial</h1>
-          <div className="text-sm text-gray-600">Local demo — posts persisted in browser</div>
+        <div style="margin-top:8px">
+          <label class="small">انتخاب یا تایپ شهر:</label>
+          <input id="cityInput" placeholder="مثال: Tehran" style="width:100%;margin-top:6px" />
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <section className="lg:col-span-2 space-y-4">
-          <div className="h-96 rounded-lg overflow-hidden shadow">
-            <MapContainer center={[20, 0]} zoom={2} style={{ height: "100%", width: "100%" }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <MapClick onSelectLocation={setSelected} />
-              {selected && (
-                <Marker position={[selected.lat, selected.lng]}>
-                  <Popup>
-                    {selected.country}
-                    <br />
-                    {selected.city}
-                  </Popup>
-                </Marker>
-              )}
-            </MapContainer>
+        <form id="uploadForm" style="margin-top:8px">
+          <label class="small">آپلود عکس برای شهری که انتخاب شده:</label>
+          <input id="fileInput" type="file" accept="image/*" style="margin-top:6px" />
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button id="uploadBtn" type="button">آپلود و ارسال پست</button>
+            <button id="clearBtn" type="button">پاک کردن local</button>
           </div>
+          <img id="preview" class="preview" src="" alt="" style="display:none" />
+        </form>
 
-          <div className="bg-white p-4 rounded shadow">
-            <h2 className="font-medium">Selected location</h2>
-            <div className="mt-2 text-sm text-gray-700">
-              {selected ? (
-                <div>
-                  <div className="flex gap-2 items-center">
-                    <div className="font-semibold">Country:</div>
-                    <div>{selected.country} ({selected.country_code})</div>
-                  </div>
-                  <div className="flex gap-2 items-center mt-1">
-                    <div className="font-semibold">Detected city:</div>
-                    <div>{selected.city || "—"}</div>
-                  </div>
-
-                  {countryInfo && (
-                    <div className="mt-3 text-sm bg-gray-50 p-2 rounded">
-                      <div className="flex gap-2"><strong>Population:</strong> {countryInfo.population?.toLocaleString()}</div>
-                      <div className="flex gap-2"><strong>Region:</strong> {countryInfo.region}</div>
-                      <div className="flex gap-2"><strong>Capital:</strong> {countryInfo.capital?.[0]}</div>
-                    </div>
-                  )}
-
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium">Choose city (or type)</label>
-                    <div className="mt-2 flex gap-2">
-                      <select value={queryCity} onChange={(e) => setQueryCity(e.target.value)} className="border p-2 rounded flex-1">
-                        <option value="">-- choose --</option>
-                        {cities.map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                        {selected.city && <option>{selected.city}</option>}
-                      </select>
-                      <input value={queryCity} onChange={(e) => setQueryCity(e.target.value)} placeholder="یا تایپ کن" className="border p-2 rounded flex-1" />
-                    </div>
-                  </div>
-
-                  <form onSubmit={handleUpload} className="mt-3">
-                    <label className="block text-sm font-medium">Upload photo for {queryCity || "(no city)"}</label>
-                    <div className="mt-2 flex gap-2">
-                      <input ref={fileRef} type="file" accept="image/*" onChange={(ev) => {
-                        const f = ev.target.files?.[0];
-                        if (!f) return setFilePreview(null);
-                        const r = new FileReader(); r.onload = () => setFilePreview(r.result); r.readAsDataURL(f);
-                      }} />
-                      <button className="bg-blue-600 text-white px-3 py-1 rounded">Upload</button>
-                    </div>
-                    {filePreview && <img src={filePreview} alt="preview" className="mt-3 max-h-48 rounded" />}
-                  </form>
-                </div>
-              ) : (
-                <div className="text-gray-500">روی نقشه کلیک کنید تا کشور انتخاب شود.</div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded shadow">
-            <h2 className="font-medium">AI Chat about the selected country</h2>
-            <div className="mt-2 text-sm text-gray-700">
-              <div className="mb-2">OpenAI key (optional, client-side; for production move to server):</div>
-              <input value={aiApiKey} onChange={(e) => setAiApiKey(e.target.value)} placeholder="sk-..." className="border p-2 rounded w-full" />
-              <ChatBox onAsk={askAI} messages={chatMessages} />
-            </div>
-          </div>
-        </section>
-
-        <aside className="space-y-4">
-          <div className="bg-white p-3 rounded shadow">
-            <h3 className="font-medium">Feed (city-scoped)</h3>
-            <div className="mt-2 max-h-96 overflow-auto space-y-3">
-              {(selected ? posts.filter(p => p.country_code === selected.country_code && (!queryCity || p.city === queryCity)) : posts).map(post => (
-                <div key={post.id} className="border rounded p-2 bg-gray-50">
-                  <div className="text-sm font-semibold">{post.city}, {post.country}</div>
-                  <img src={post.image} alt="post" className="mt-2 rounded max-h-40 w-full object-cover" />
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="text-sm">Likes: {post.likes}</div>
-                    <div className="flex gap-2">
-                      <button onClick={() => toggleLike(post.id)} className="text-sm px-2 py-1 border rounded">Like</button>
-                      <button onClick={() => sharePost(post)} className="text-sm px-2 py-1 border rounded">Share</button>
-                    </div>
-                  </div>
-                  <Comments post={post} onAdd={(t) => addComment(post.id, t)} />
-                </div>
-              ))}
-
-              {posts.length === 0 && <div className="text-gray-500">هیچ پستی نیست — اولین نفر باشید!</div>}
-            </div>
-          </div>
-
-          <div className="bg-white p-3 rounded shadow">
-            <h3 className="font-medium">Global recent posts</h3>
-            <div className="mt-2 space-y-2 max-h-64 overflow-auto">
-              {posts.slice(0, 8).map(p => (
-                <img key={p.id} src={p.image} alt="thumb" className="w-full rounded max-h-24 object-cover" />
-              ))}
-            </div>
-          </div>
-        </aside>
-      </main>
-
-      <footer className="max-w-6xl mx-auto p-4 text-sm text-gray-500">Demo — data stored in browser. For production, add authentication, moderation and a backend.</footer>
-    </div>
-  );
-}
-
-function ChatBox({ onAsk, messages }) {
-  const [text, setText] = useState("");
-  return (
-    <div className="mt-3">
-      <div className="max-h-48 overflow-auto p-2 bg-gray-50 rounded space-y-2">
-        {messages.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-            <div className="inline-block p-2 rounded" style={{ background: m.role === "user" ? "#e0f2fe" : "#eef2ff" }}>{m.text}</div>
-          </div>
-        ))}
+        <div style="margin-top:12px">
+          <label class="small">چت هوش مصنوعی دربارهٔ کشور (فقط fallback محلی):</label>
+          <textarea id="aiQ" rows="2" style="width:100%;margin-top:6px"></textarea>
+          <div style="margin-top:6px;display:flex;gap:8px"><button id="askBtn">پرسش</button></div>
+          <div id="aiAnswer" class="small" style="margin-top:8px"></div>
+        </div>
       </div>
-      <div className="mt-2 flex gap-2">
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ask about the country..." className="border p-2 rounded flex-1" />
-        <button onClick={() => { if (text.trim()) { onAsk(text); setText(""); } }} className="bg-green-600 text-white px-3 py-1 rounded">Ask</button>
+
+      <div class="panel">
+        <div class="small" style="font-weight:600">فید پست‌ها</div>
+        <div id="feed" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto"></div>
       </div>
     </div>
-  );
-}
 
-function Comments({ post, onAdd }) {
-  const [text, setText] = useState("");
-  return (
-    <div className="mt-2">
-      <div className="text-sm space-y-1 max-h-36 overflow-auto">
-        {post.comments.map(c => (
-          <div key={c.id} className="text-xs bg-white p-1 rounded border">{c.text}</div>
-        ))}
-      </div>
-      <div className="mt-2 flex gap-2">
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a comment..." className="border p-2 rounded flex-1 text-sm" />
-        <button onClick={() => { if (text.trim()) { onAdd(text); setText(""); } }} className="px-2 py-1 border rounded text-sm">Comment</button>
-      </div>
-    </div>
-  );
-}
+    <div style="margin-top:12px" class="small">نکته: این نسخه همه چیز را در مرورگر شما (localStorage) ذخیره می‌کند؛ برای استفادهٔ عمومی باید از سرور و میزبانی تصاویر استفاده شود.</div>
+  </div>
 
-function sharePost(post) {
-  const url = window.location.href.split("#")[0] + `#post=${post.id}`;
-  if (navigator.share) {
-    navigator.share({ title: `${post.city}, ${post.country}`, url }).catch(() => copyToClipboard(url));
-  } else copyToClipboard(url);
-}
-function copyToClipboard(text) {
-  navigator.clipboard?.writeText(text).then(() => alert("Link copied."), () => prompt("Copy link:", text));
-}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ساده شده اما کارا — single-file demo
+    const map = L.map('map').setView([20,0],2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);
 
-function sampleCitiesForCountry(code) {
-  // small curated fallback for demo use. Add more as needed.
-  const map = {
-    US: ["New York", "Los Angeles", "Chicago", "Houston"],
-    IR: ["Tehran", "Mashhad", "Isfahan", "Shiraz"],
-    FR: ["Paris", "Marseille", "Lyon"],
-    DE: ["Berlin", "Munich", "Hamburg"],
-    IN: ["Mumbai", "Delhi", "Bengaluru"],
-    GB: ["London", "Manchester", "Birmingham"],
-  };
-  return map[code] || [];
-}
+    let selected = null; // {lat,lng,country,country_code,city}
+    const selInfo = document.getElementById('selInfo');
+    const cityInput = document.getElementById('cityInput');
+    const feedEl = document.getElementById('feed');
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const aiQ = document.getElementById('aiQ');
+    const askBtn = document.getElementById('askBtn');
+    const aiAnswer = document.getElementById('aiAnswer');
 
-function fallbackAnswerFromCountry(selected, countryInfo, question) {
-  const lower = question.toLowerCase();
-  if (!countryInfo) return "من اطلاعات کافی درباره این کشور ندارم. لطفا کلید OpenAI را وارد کنید یا کشور دیگری انتخاب کنید.";
-  if (lower.includes("population") || lower.includes("جمعیت")) {
-    return `جمعیت ${selected.country} حدود ${countryInfo.population?.toLocaleString() || 'N/A'} نفر است.`;
-  }
-  if (lower.includes("capital") || lower.includes("پایتخت")) {
-    return `پایتخت ${selected.country} ${countryInfo.capital?.[0] || 'N/A'} است.`;
-  }
-  if (lower.includes("currency") || lower.includes("واحد پول")) {
-    const c = countryInfo.currencies ? Object.keys(countryInfo.currencies)[0] : 'N/A';
-    return `واحد پول ${selected.country} معمولاً ${c} است.`;
-  }
-  // fallback generic
-  return `در مورد ${selected.country}: منطقه: ${countryInfo.region || 'N/A'}. پایتخت: ${countryInfo.capital?.[0] || 'N/A'}. جمعیت: ${countryInfo.population?.toLocaleString() || 'N/A'}.`; 
-}
+    const POSTS_KEY = 'wmp_posts_v1';
+    function loadPosts(){ try { return JSON.parse(localStorage.getItem(POSTS_KEY)||'[]') }catch(e){return []} }
+    function savePosts(p){ localStorage.setItem(POSTS_KEY, JSON.stringify(p)); }
+
+    function renderFeed(){
+      const posts = loadPosts();
+      feedEl.innerHTML = '';
+      if(posts.length===0){ feedEl.innerHTML = '<div class="small">هنوز پستی نیست — اولین نفر باش!</div>'; return }
+      posts.forEach(p=>{
+        const div = document.createElement('div'); div.className='post';
+        div.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="small"><strong>${p.city||'—'}</strong> — ${p.country||'—'}</div><div class="small">${new Date(p.createdAt).toLocaleString()}</div></div>`;
+        const img = document.createElement('img'); img.src = p.image; img.style.width='100%'; img.style.marginTop='8px'; img.style.borderRadius='6px'; div.appendChild(img);
+        const actions = document.createElement('div'); actions.style.marginTop='8px'; actions.innerHTML = `<div style="display:flex;gap:8px;align-items:center"><button class='likeBtn'>❤ ${p.likes||0}</button><button class='shareBtn'>اشتراک</button></div>`;
+        div.appendChild(actions);
+        const comments = document.createElement('div'); comments.style.marginTop='8px'; comments.innerHTML = `<div class="small">نظرات:</div>`;
+        (p.comments||[]).forEach(c=>{ const cdiv=document.createElement('div'); cdiv.className='small'; cdiv.style.padding='6px 4px'; cdiv.style.borderTop='1px solid #eee'; cdiv.textContent = c.text; comments.appendChild(cdiv); });
+        const cmForm = document.createElement('div'); cmForm.style.marginTop='6px'; cmForm.innerHTML = `<input class='cmInput' placeholder='نظر...' style='width:70%'><button class='cmBtn'>ارسال</button>`;
+        div.appendChild(comments); div.appendChild(cmForm);
+        feedEl.appendChild(div);
+
+        // events
+        actions.querySelector('.likeBtn').addEventListener('click',()=>{
+          const posts = loadPosts(); const idx = posts.findIndex(x=>x.id===p.id); if(idx>=0){ posts[idx].likes=(posts[idx].likes||0)+1; savePosts(posts); renderFeed(); }
+        });
+        actions.querySelector('.shareBtn').addEventListener('click',()=>{ navigator.clipboard?.writeText(location.href + '#post='+p.id).then(()=>alert('لینک کپی شد')) });
+        cmForm.querySelector('.cmBtn').addEventListener('click',()=>{
+          const t = cmForm.querySelector('.cmInput').value.trim(); if(!t) return; const posts = loadPosts(); const idx = posts.findIndex(x=>x.id===p.id); if(idx>=0){ posts[idx].comments = posts[idx].comments||[]; posts[idx].comments.push({id:Date.now(),text:t}); savePosts(posts); renderFeed(); }
+        });
+      })
+    }
+
+    renderFeed();
+
+    let marker = null;
+    map.on('click', async (e)=>{
+      const {lat,lng} = e.latlng;
+      if(marker) map.removeLayer(marker);
+      marker = L.marker([lat,lng]).addTo(map);
+      selected = {lat,lng};
+      selInfo.textContent = 'در حال تشخیص کشور...';
+      try{
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+        const j = await res.json();
+        selected.country = j.address?.country || '';
+        selected.country_code = (j.address?.country_code||'').toUpperCase();
+        selected.city = j.address?.city || j.address?.town || j.address?.village || j.address?.county || '';
+        selInfo.innerHTML = `<div><strong>کشور:</strong> ${selected.country||'—'} (${selected.country_code||'—'})</div><div><strong>شهر (تشخیص):</strong> ${selected.city||'—'}</div>`;
+        if(!cityInput.value) cityInput.value = selected.city || '';
+        // fetch population via restcountries
+        if(selected.country_code){
+          try{
+            const rc = await fetch('https://restcountries.com/v3.1/alpha/'+selected.country_code);
+            const arr = await rc.json(); const info = arr?.[0];
+            if(info) selInfo.innerHTML += `<div style="margin-top:6px" class='small'><strong>جمعیت:</strong> ${info.population?.toLocaleString()||'—'} — <strong>پایتخت:</strong> ${info.capital?.[0]||'—'}</div>`;
+          }catch(e){ }
+        }
+      }catch(err){ selInfo.textContent='خطا در تشخیص'; }
+    });
+
+    // preview image
+    fileInput.addEventListener('change', ()=>{
+      const f = fileInput.files[0]; if(!f) { preview.style.display='none'; preview.src=''; return }
+      const r = new FileReader(); r.onload = ()=>{ preview.src = r.result; preview.style.display='block'; } ; r.readAsDataURL(f);
+    });
+
+    uploadBtn.addEventListener('click', ()=>{
+      if(!selected || !selected.country){ alert('ابتدا روی نقشه کلیک و کشور انتخاب کنید.'); return }
+      const f = fileInput.files[0]; if(!f){ alert('یک فایل انتخاب کنید.'); return }
+      const reader = new FileReader(); reader.onload = ()=>{
+        const img = reader.result;
+        const posts = loadPosts();
+        const post = { id: 'p'+Date.now(), country: selected.country, country_code: selected.country_code, city: cityInput.value||selected.city||'', image: img, createdAt: new Date().toISOString(), likes:0, comments:[] };
+        posts.unshift(post); savePosts(posts); renderFeed(); preview.style.display='none'; fileInput.value='';
+      };
+      reader.readAsDataURL(f);
+    });
+
+    clearBtn.addEventListener('click', ()=>{ if(confirm('پاک کردن همه داده‌های محلی؟')){ localStorage.removeItem(POSTS_KEY); renderFeed(); } });
+
+    // simple AI fallback: uses available country info
+    askBtn.addEventListener('click', async ()=>{
+      if(!selected || !selected.country){ alert('ابتدا کشور انتخاب کن'); return }
+      const q = aiQ.value.trim(); if(!q) return; aiAnswer.textContent = 'درحال پردازش...';
+      // simple heuristics
+      const lower = q.toLowerCase();
+      const posts = loadPosts();
+      let answer = '';
+      if(lower.includes('جمعیت')||lower.includes('population')){
+        try{ const rc = await fetch('https://restcountries.com/v3.1/alpha/'+selected.country_code); const arr = await rc.json(); const info = arr?.[0]; answer = info ? `جمعیت ${selected.country} حدود ${info.population?.toLocaleString()||'N/A'} نفر است.` : 'اطلاعات موجود نیست.' }catch(e){ answer='خطا در دریافت اطلاعات.' }
+      } else if(lower.includes('پایتخت')||lower.includes('capital')){
+        try{ const rc = await fetch('https://restcountries.com/v3.1/alpha/'+selected.country_code); const arr = await rc.json(); const info = arr?.[0]; answer = info ? `پایتخت ${selected.country} ${info.capital?.[0]||'N/A'} است.` : 'اطلاعات موجود نیست.' }catch(e){ answer='خطا در دریافت اطلاعات.' }
+      } else {
+        answer = `این یک پاسخ سادهٔ محلی است. دربارهٔ ${selected.country} اطلاعات عمومی را می‌توانید از منابع معتبر مثل Wikipedia یا restcountries.com بخوانید.`
+      }
+      aiAnswer.textContent = answer;
+    });
+  </script>
+</body>
+</html>
