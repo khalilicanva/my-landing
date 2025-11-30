@@ -1,29 +1,107 @@
-<!doctype html>
-<html lang="fa">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لندینگ رایگان من</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لندینگ پیج من</title>
+
   <style>
-    body{font-family:tahoma;direction:rtl;padding:30px;max-width:800px;margin:auto;}
-    .btn{display:inline-block;background:#1a73e8;color:#fff;padding:12px 18px;border-radius:7px;text-decoration:none;margin-top:20px}
-    iframe{width:100%;height:600px;border:1px solid #ddd;border-radius:10px;margin-top:20px;}
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #0d0d0d;
+      color: white;
+    }
+
+    header {
+      padding: 40px;
+      text-align: center;
+      background: linear-gradient(135deg, #1f1f1f, #444);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 1.2rem;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 15px 30px;
+      background: #00bfff;
+      color: black;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 1.3rem;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: #09d7ff;
+    }
+
+    #chatbox {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      color: black;
+      padding: 10px;
+      border-radius: 10px;
+      width: 320px;
+      height: 430px;
+      box-shadow: 0 0 15px rgba(255,255,255,0.2);
+      display: none;
+    }
+
+    #chat-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #00bfff;
+      padding: 15px 20px;
+      border-radius: 50%;
+      font-size: 20px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0,255,255,0.6);
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
 
-  <h1>سلام! این اولین لندینگ پیج رایگان منه</h1>
-  <p>این صفحه کاملاً رایگان ساخته شده و روی هاست رایگان بالا میره.</p>
-  <a class="btn" href="#ai">برو به چت هوش مصنوعی</a>
+<header>
+  <h1>به وبسایت من خوش آمدید</h1>
+  <p>ساده‌ترین لندینگ پیج رایگان + چت هوش مصنوعی</p>
+  <a class="btn" href="#">بزن بریم!</a>
+</header>
 
-  <h2 id="ai">چت هوش مصنوعی</h2>
-  <!-- اینجا بعداً برایت لیست چت‌های رایگان می‌ذارم -->
-  <iframe id="ai-chat" src=""></iframe>
+<button id="chat-btn">💬</button>
 
-  <script>
-    // وقتی Space انتخاب کردیم اینجا آدرسش رو می‌ذاریم
-    document.getElementById("ai-chat").src = "";
-  </script>
+<div id="chatbox">
+  <iframe src="https://yuntian-deng-chatgpt.hf.space"></iframe>
+</div>
+
+<script>
+  const btn = document.getElementById("chat-btn");
+  const box = document.getElementById("chatbox");
+
+  btn.onclick = () => {
+    box.style.display = box.style.display === "none" ? "block" : "none";
+  };
+</script>
 
 </body>
 </html>
+
