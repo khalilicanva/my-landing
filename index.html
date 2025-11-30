@@ -3,105 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لندینگ پیج من</title>
-
+  <title>لندینگ پیج حرفه‌ای من</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #0d0d0d;
-      color: white;
-    }
-
-    header {
-      padding: 40px;
-      text-align: center;
-      background: linear-gradient(135deg, #1f1f1f, #444);
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
-
-    p {
-      font-size: 1.2rem;
-    }
-
-    .btn {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 15px 30px;
-      background: #00bfff;
-      color: black;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 1.3rem;
-      transition: 0.2s;
-    }
-
-    .btn:hover {
-      background: #09d7ff;
-    }
-
-    #chatbox {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background: white;
-      color: black;
-      padding: 10px;
-      border-radius: 10px;
-      width: 320px;
-      height: 430px;
-      box-shadow: 0 0 15px rgba(255,255,255,0.2);
-      display: none;
-    }
-
-    #chat-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #00bfff;
-      padding: 15px 20px;
-      border-radius: 50%;
-      font-size: 20px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 0 15px rgba(0,255,255,0.6);
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      border-radius: 8px;
-    }
+    body {background: #0f0f0f; color: white; font-family: 'Tahoma', sans-serif;}
+    #chatbox {position: fixed; bottom: 20px; left: 20px; width: 350px; height: 500px; background: white; border-radius: 10px; display: none; overflow: hidden;}
+    #chat-btn {position: fixed; bottom: 20px; right: 20px; background: #00bfff; width: 60px; height: 60px; border-radius: 50%; font-size: 25px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 20px rgba(0,191,255,0.6);}
+    iframe {width: 100%; height: 100%; border: none;}
   </style>
 </head>
 <body>
 
-<header>
-  <h1>به وبسایت من خوش آمدید</h1>
-  <p>ساده‌ترین لندینگ پیج رایگان + چت هوش مصنوعی</p>
-  <a class="btn" href="#">بزن بریم!</a>
+<header class="text-center py-20 bg-gradient-to-r from-gray-800 to-gray-600">
+  <h1 class="text-5xl mb-4 font-bold">به لندینگ پیج حرفه‌ای من خوش آمدید</h1>
+  <p class="text-xl mb-6">سریع، رایگان و با چت هوش مصنوعی پیشرفته</p>
+  <a href="#features" class="bg-blue-500 hover:bg-blue-400 text-black px-6 py-3 rounded-xl transition">شروع کن</a>
 </header>
 
-<button id="chat-btn">💬</button>
+<section id="features" class="py-20 text-center">
+  <h2 class="text-4xl mb-10">ویژگی‌ها</h2>
+  <div class="flex flex-wrap justify-center gap-8">
+    <div class="bg-gray-800 p-6 rounded-xl w-80 hover:scale-105 transition">
+      <h3 class="text-2xl mb-2 font-semibold">ظاهر حرفه‌ای</h3>
+      <p>طراحی مدرن، ریسپانسیو و جذاب برای همه دستگاه‌ها</p>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-xl w-80 hover:scale-105 transition">
+      <h3 class="text-2xl mb-2 font-semibold">چت هوش مصنوعی</h3>
+      <p>چت GPT رایگان و پیشرفته که در سایت به راحتی فعال می‌شود</p>
+    </div>
+    <div class="bg-gray-800 p-6 rounded-xl w-80 hover:scale-105 transition">
+      <h3 class="text-2xl mb-2 font-semibold">کاملاً رایگان</h3>
+      <p>بدون هزینه حتی برای دامین اولیه و نگهداری سایت</p>
+    </div>
+  </div>
+</section>
+
+<footer class="text-center py-10 bg-gray-900">
+  <p>© 2025 وبسایت من | تمام حقوق محفوظ است</p>
+</footer>
 
 <div id="chatbox">
   <iframe src="https://yuntian-deng-chatgpt.hf.space"></iframe>
 </div>
+<div id="chat-btn">💬</div>
 
 <script>
-  const btn = document.getElementById("chat-btn");
-  const box = document.getElementById("chatbox");
-
-  btn.onclick = () => {
-    box.style.display = box.style.display === "none" ? "block" : "none";
-  };
+  const btn = document.getElementById('chat-btn');
+  const box = document.getElementById('chatbox');
+  btn.onclick = () => box.style.display = box.style.display === 'none' ? 'block' : 'none';
 </script>
 
 </body>
 </html>
-
