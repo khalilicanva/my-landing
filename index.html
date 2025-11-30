@@ -1,44 +1,137 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لندینگ پیج حرفه‌ای من</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    body {background: #0f0f0f; color: white; font-family: 'Tahoma', sans-serif;}
-    #chatbox {position: fixed; bottom: 20px; left: 20px; width: 350px; height: 500px; background: white; border-radius: 10px; display: none; overflow: hidden;}
-    #chat-btn {position: fixed; bottom: 20px; right: 20px; background: #00bfff; width: 60px; height: 60px; border-radius: 50%; font-size: 25px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 20px rgba(0,191,255,0.6);}
-    iframe {width: 100%; height: 100%; border: none;}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لندینگ پیج حرفه‌ای و جذاب</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+    color: #fff;
+  }
+  header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px 20px;
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+  }
+  header h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+  header p {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+  .btn-primary {
+    padding: 15px 30px;
+    background: #00ffff;
+    color: #000;
+    font-weight: bold;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: 0.3s;
+  }
+  .btn-primary:hover {
+    background: #09e0ff;
+    transform: scale(1.05);
+  }
+  section.features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    padding: 60px 20px;
+  }
+  .feature-card {
+    background: #1f1f1f;
+    padding: 30px;
+    border-radius: 20px;
+    width: 300px;
+    transition: 0.3s;
+    text-align: center;
+  }
+  .feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 0 20px #00ffff;
+  }
+  .feature-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+  footer {
+    text-align: center;
+    padding: 30px;
+    background: #111;
+  }
+  #chatbox {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 360px;
+    height: 500px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    display: none;
+    box-shadow: 0 0 30px rgba(0,255,255,0.5);
+  }
+  #chat-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: #00ffff;
+    border-radius: 50%;
+    font-size: 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 0 25px #00ffff;
+    transition: 0.3s;
+  }
+  #chat-btn:hover {
+    transform: scale(1.1);
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>
 </head>
 <body>
 
-<header class="text-center py-20 bg-gradient-to-r from-gray-800 to-gray-600">
-  <h1 class="text-5xl mb-4 font-bold">به لندینگ پیج حرفه‌ای من خوش آمدید</h1>
-  <p class="text-xl mb-6">سریع، رایگان و با چت هوش مصنوعی پیشرفته</p>
-  <a href="#features" class="bg-blue-500 hover:bg-blue-400 text-black px-6 py-3 rounded-xl transition">شروع کن</a>
+<header>
+  <h1>به سایت جذاب و حرفه‌ای من خوش آمدید</h1>
+  <p>یک لندینگ پیج مدرن با چت هوش مصنوعی پیشرفته</p>
+  <a href="#features" class="btn-primary">شروع کن</a>
 </header>
 
-<section id="features" class="py-20 text-center">
-  <h2 class="text-4xl mb-10">ویژگی‌ها</h2>
-  <div class="flex flex-wrap justify-center gap-8">
-    <div class="bg-gray-800 p-6 rounded-xl w-80 hover:scale-105 transition">
-      <h3 class="text-2xl mb-2 font-semibold">ظاهر حرفه‌ای</h3>
-      <p>طراحی مدرن، ریسپانسیو و جذاب برای همه دستگاه‌ها</p>
-    </div>
-    <div class="bg-gray-800 p-6 rounded-xl w-80 hover:scale-105 transition">
-      <h3 class="text-2xl mb-2 font-semibold">چت هوش مصنوعی</h3>
-      <p>چت GPT رایگان و پیشرفته که در سایت به راحتی فعال می‌شود</p>
-    </div>
-    <div class="bg-gray-800 p-6 rounded-xl w-80 hover:scale-105 transition">
-      <h3 class="text-2xl mb-2 font-semibold">کاملاً رایگان</h3>
-      <p>بدون هزینه حتی برای دامین اولیه و نگهداری سایت</p>
-    </div>
+<section id="features" class="features">
+  <div class="feature-card">
+    <h3>طراحی مدرن</h3>
+    <p>ظاهر جذاب و مینیمال برای همه دستگاه‌ها</p>
+  </div>
+  <div class="feature-card">
+    <h3>چت هوش مصنوعی</h3>
+    <p>چت GPT رایگان، فعال و شناور در سایت</p>
+  </div>
+  <div class="feature-card">
+    <h3>کاملاً رایگان</h3>
+    <p>بدون هزینه حتی برای دامین اولیه و نگهداری سایت</p>
   </div>
 </section>
 
-<footer class="text-center py-10 bg-gray-900">
+<footer>
   <p>© 2025 وبسایت من | تمام حقوق محفوظ است</p>
 </footer>
 
