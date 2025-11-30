@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لندینگ رایگان من</title>
+  <style>
+    body{font-family:tahoma;direction:rtl;padding:30px;max-width:800px;margin:auto;}
+    .btn{display:inline-block;background:#1a73e8;color:#fff;padding:12px 18px;border-radius:7px;text-decoration:none;margin-top:20px}
+    iframe{width:100%;height:600px;border:1px solid #ddd;border-radius:10px;margin-top:20px;}
+  </style>
+</head>
+<body>
+
+  <h1>سلام! این اولین لندینگ پیج رایگان منه</h1>
+  <p>این صفحه کاملاً رایگان ساخته شده و روی هاست رایگان بالا میره.</p>
+  <a class="btn" href="#ai">برو به چت هوش مصنوعی</a>
+
+  <h2 id="ai">چت هوش مصنوعی</h2>
+  <!-- اینجا بعداً برایت لیست چت‌های رایگان می‌ذارم -->
+  <iframe id="ai-chat" src=""></iframe>
+
+  <script>
+    // وقتی Space انتخاب کردیم اینجا آدرسش رو می‌ذاریم
+    document.getElementById("ai-chat").src = "";
+  </script>
+
+</body>
+</html>
