@@ -1,178 +1,108 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>WorldMap Demo (single file)</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;direction:rtl}
-    #map{height:420px;border-radius:8px}
-    .panel{background:#fff;padding:12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-    .row{display:flex;gap:8px;align-items:center}
-    input,select,button,textarea{padding:8px;border:1px solid #ddd;border-radius:6px}
-    img.preview{max-height:120px;border-radius:6px;margin-top:8px}
-    .post{border:1px solid #eee;padding:8px;border-radius:6px;background:#fafafa}
-    .small{font-size:13px;color:#444}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>World Map Social – FA/EN</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+ body { margin:0; font-family:sans-serif; background:#f5f5f5; direction:rtl; }
+ .ltr { direction:ltr; text-align:left; }
+ .center { display:flex; justify-content:center; align-items:center; height:100vh; }
+ .card { background:white; padding:30px; border-radius:18px; box-shadow:0 5px 25px rgba(0,0,0,0.1); width:330px; }
+ input, button, select { width:100%; padding:12px; border-radius:10px; margin-top:10px; border:1px solid #ddd; font-size:15px; }
+ button { background:#111; color:white; cursor:pointer; }
+ header { padding:15px 20px; font-size:20px; font-weight:bold; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:center; }
+ #map { height:300px; border-radius:15px; margin-top:20px; }
+ .section { background:white; padding:20px; border-radius:15px; margin:20px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+</style>
 </head>
 <body>
-  <div style="max-width:1000px;margin:18px auto;">
-    <h2>دموی ساده — نقشه، آپلود تصویر، فید و چت (local)</h2>
+<div id="auth" class="center">
+  <div class="card" id="authCard">
+    <h2 id="authTitle" style="text-align:center;">ورود / ثبت‌نام</h2>
+    <input id="username" placeholder="نام کاربری" />
+    <input id="password" type="password" placeholder="رمز عبور" />
+    <button onclick="login()" id="loginBtn">ورود</button>
+    <button onclick="signup()" style="background:#555;" id="signupBtn">ثبت‌نام</button>
+    <select id="langAuth" onchange="setLang(this.value)">
+      <option value="fa">فارسی</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+</div>
 
-    <div id="map" class="panel"></div>
+<div id="app" style="display:none;">
+  <header>
+    <span id="headerTitle">🌍 شبکه اجتماعی نقشه</span>
+    <select id="langMain" onchange="setLang(this.value)">
+      <option value="fa">FA</option>
+      <option value="en">EN</option>
+    </select>
+  </header>
 
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:12px;margin-top:12px;">
-      <div class="panel">
-        <div class="small">موقعیت انتخاب‌شده:</div>
-        <div id="selInfo" class="small">روی نقشه کلیک کنید.</div>
-
-        <div style="margin-top:8px">
-          <label class="small">انتخاب یا تایپ شهر:</label>
-          <input id="cityInput" placeholder="مثال: Tehran" style="width:100%;margin-top:6px" />
-        </div>
-
-        <form id="uploadForm" style="margin-top:8px">
-          <label class="small">آپلود عکس برای شهری که انتخاب شده:</label>
-          <input id="fileInput" type="file" accept="image/*" style="margin-top:6px" />
-          <div style="margin-top:8px;display:flex;gap:8px">
-            <button id="uploadBtn" type="button">آپلود و ارسال پست</button>
-            <button id="clearBtn" type="button">پاک کردن local</button>
-          </div>
-          <img id="preview" class="preview" src="" alt="" style="display:none" />
-        </form>
-
-        <div style="margin-top:12px">
-          <label class="small">چت هوش مصنوعی دربارهٔ کشور (فقط fallback محلی):</label>
-          <textarea id="aiQ" rows="2" style="width:100%;margin-top:6px"></textarea>
-          <div style="margin-top:6px;display:flex;gap:8px"><button id="askBtn">پرسش</button></div>
-          <div id="aiAnswer" class="small" style="margin-top:8px"></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="small" style="font-weight:600">فید پست‌ها</div>
-        <div id="feed" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto"></div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px" class="small">نکته: این نسخه همه چیز را در مرورگر شما (localStorage) ذخیره می‌کند؛ برای استفادهٔ عمومی باید از سرور و میزبانی تصاویر استفاده شود.</div>
+  <div class="section">
+    <h3 id="mapTitle">نقشه جهان</h3>
+    <div id="map"></div>
+    <p id="countryInfo"></p>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    // ساده شده اما کارا — single-file demo
-    const map = L.map('map').setView([20,0],2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);
+  <div class="section">
+    <h3 id="uploadTitle">ارسال پست</h3>
+    <input type="file" id="imgUpload" />
+    <button onclick="postImage()" id="postBtn">ارسال</button>
+  </div>
 
-    let selected = null; // {lat,lng,country,country_code,city}
-    const selInfo = document.getElementById('selInfo');
-    const cityInput = document.getElementById('cityInput');
-    const feedEl = document.getElementById('feed');
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const aiQ = document.getElementById('aiQ');
-    const askBtn = document.getElementById('askBtn');
-    const aiAnswer = document.getElementById('aiAnswer');
+  <div class="section">
+    <h3 id="feedTitle">پست‌های کاربران</h3>
+    <div id="feed"></div>
+  </div>
+</div>
 
-    const POSTS_KEY = 'wmp_posts_v1';
-    function loadPosts(){ try { return JSON.parse(localStorage.getItem(POSTS_KEY)||'[]') }catch(e){return []} }
-    function savePosts(p){ localStorage.setItem(POSTS_KEY, JSON.stringify(p)); }
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+let lang = localStorage.lang || 'fa';
+const texts = {
+  fa:{authTitle:'ورود / ثبت‌نام',login:'ورود',signup:'ثبت‌نام',user:'نام کاربری',pass:'رمز عبور',header:'🌍 شبکه اجتماعی نقشه',map:'نقشه جهان',postTitle:'ارسال پست',post:'ارسال',feed:'پست‌های کاربران',country:'کشور'},
+  en:{authTitle:'Login / Signup',login:'Login',signup:'Signup',user:'Username',pass:'Password',header:'🌍 World Map Social',map:'World Map',postTitle:'Upload Post',post:'Upload',feed:'User Posts',country:'Country'}
+};
 
-    function renderFeed(){
-      const posts = loadPosts();
-      feedEl.innerHTML = '';
-      if(posts.length===0){ feedEl.innerHTML = '<div class="small">هنوز پستی نیست — اولین نفر باش!</div>'; return }
-      posts.forEach(p=>{
-        const div = document.createElement('div'); div.className='post';
-        div.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="small"><strong>${p.city||'—'}</strong> — ${p.country||'—'}</div><div class="small">${new Date(p.createdAt).toLocaleString()}</div></div>`;
-        const img = document.createElement('img'); img.src = p.image; img.style.width='100%'; img.style.marginTop='8px'; img.style.borderRadius='6px'; div.appendChild(img);
-        const actions = document.createElement('div'); actions.style.marginTop='8px'; actions.innerHTML = `<div style="display:flex;gap:8px;align-items:center"><button class='likeBtn'>❤ ${p.likes||0}</button><button class='shareBtn'>اشتراک</button></div>`;
-        div.appendChild(actions);
-        const comments = document.createElement('div'); comments.style.marginTop='8px'; comments.innerHTML = `<div class="small">نظرات:</div>`;
-        (p.comments||[]).forEach(c=>{ const cdiv=document.createElement('div'); cdiv.className='small'; cdiv.style.padding='6px 4px'; cdiv.style.borderTop='1px solid #eee'; cdiv.textContent = c.text; comments.appendChild(cdiv); });
-        const cmForm = document.createElement('div'); cmForm.style.marginTop='6px'; cmForm.innerHTML = `<input class='cmInput' placeholder='نظر...' style='width:70%'><button class='cmBtn'>ارسال</button>`;
-        div.appendChild(comments); div.appendChild(cmForm);
-        feedEl.appendChild(div);
+function setLang(l){ lang=l; localStorage.lang=l; applyLang(); }
+function applyLang(){
+  document.body.style.direction = lang==='fa'?'rtl':'ltr';
+  document.getElementById('authTitle').innerText=texts[lang].authTitle;
+  username.placeholder=texts[lang].user;
+  password.placeholder=texts[lang].pass;
+  loginBtn.innerText=texts[lang].login;
+  signupBtn.innerText=texts[lang].signup;
+  headerTitle.innerText=texts[lang].header;
+  mapTitle.innerText=texts[lang].map;
+  uploadTitle.innerText=texts[lang].postTitle;
+  postBtn.innerText=texts[lang].post;
+  feedTitle.innerText=texts[lang].feed;
+}
 
-        // events
-        actions.querySelector('.likeBtn').addEventListener('click',()=>{
-          const posts = loadPosts(); const idx = posts.findIndex(x=>x.id===p.id); if(idx>=0){ posts[idx].likes=(posts[idx].likes||0)+1; savePosts(posts); renderFeed(); }
-        });
-        actions.querySelector('.shareBtn').addEventListener('click',()=>{ navigator.clipboard?.writeText(location.href + '#post='+p.id).then(()=>alert('لینک کپی شد')) });
-        cmForm.querySelector('.cmBtn').addEventListener('click',()=>{
-          const t = cmForm.querySelector('.cmInput').value.trim(); if(!t) return; const posts = loadPosts(); const idx = posts.findIndex(x=>x.id===p.id); if(idx>=0){ posts[idx].comments = posts[idx].comments||[]; posts[idx].comments.push({id:Date.now(),text:t}); savePosts(posts); renderFeed(); }
-        });
-      })
-    }
+applyLang();
 
-    renderFeed();
+def login(){ if(username.value && password.value){ localStorage.user=username.value; startApp(); }}
+def signup(){ login(); }
 
-    let marker = null;
-    map.on('click', async (e)=>{
-      const {lat,lng} = e.latlng;
-      if(marker) map.removeLayer(marker);
-      marker = L.marker([lat,lng]).addTo(map);
-      selected = {lat,lng};
-      selInfo.textContent = 'در حال تشخیص کشور...';
-      try{
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-        const j = await res.json();
-        selected.country = j.address?.country || '';
-        selected.country_code = (j.address?.country_code||'').toUpperCase();
-        selected.city = j.address?.city || j.address?.town || j.address?.village || j.address?.county || '';
-        selInfo.innerHTML = `<div><strong>کشور:</strong> ${selected.country||'—'} (${selected.country_code||'—'})</div><div><strong>شهر (تشخیص):</strong> ${selected.city||'—'}</div>`;
-        if(!cityInput.value) cityInput.value = selected.city || '';
-        // fetch population via restcountries
-        if(selected.country_code){
-          try{
-            const rc = await fetch('https://restcountries.com/v3.1/alpha/'+selected.country_code);
-            const arr = await rc.json(); const info = arr?.[0];
-            if(info) selInfo.innerHTML += `<div style="margin-top:6px" class='small'><strong>جمعیت:</strong> ${info.population?.toLocaleString()||'—'} — <strong>پایتخت:</strong> ${info.capital?.[0]||'—'}</div>`;
-          }catch(e){ }
-        }
-      }catch(err){ selInfo.textContent='خطا در تشخیص'; }
-    });
+function startApp(){ document.getElementById('auth').style.display='none'; document.getElementById('app').style.display='block'; initMap(); loadFeed(); }
+if(localStorage.user) startApp();
 
-    // preview image
-    fileInput.addEventListener('change', ()=>{
-      const f = fileInput.files[0]; if(!f) { preview.style.display='none'; preview.src=''; return }
-      const r = new FileReader(); r.onload = ()=>{ preview.src = r.result; preview.style.display='block'; } ; r.readAsDataURL(f);
-    });
+let map;
+function initMap(){
+ map=L.map('map').setView([20,10],2);
+ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(map);
+ map.on('click',async e=>{
+   const data = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${e.latlng.lat}&lon=${e.latlng.lng}&format=json`).then(r=>r.json());
+   countryInfo.innerHTML = data.address.country ? `${texts[lang].country}: ${data.address.country}` : 'Not found';
+ });
+}
 
-    uploadBtn.addEventListener('click', ()=>{
-      if(!selected || !selected.country){ alert('ابتدا روی نقشه کلیک و کشور انتخاب کنید.'); return }
-      const f = fileInput.files[0]; if(!f){ alert('یک فایل انتخاب کنید.'); return }
-      const reader = new FileReader(); reader.onload = ()=>{
-        const img = reader.result;
-        const posts = loadPosts();
-        const post = { id: 'p'+Date.now(), country: selected.country, country_code: selected.country_code, city: cityInput.value||selected.city||'', image: img, createdAt: new Date().toISOString(), likes:0, comments:[] };
-        posts.unshift(post); savePosts(posts); renderFeed(); preview.style.display='none'; fileInput.value='';
-      };
-      reader.readAsDataURL(f);
-    });
+function postImage(){ let f=imgUpload.files[0]; if(!f) return alert('Select image'); let r=new FileReader(); r.onload=()=>{let p=JSON.parse(localStorage.posts||'[]'); p.push({user:localStorage.user,img:r.result}); localStorage.posts=JSON.stringify(p); loadFeed();}; r.readAsDataURL(f);} 
 
-    clearBtn.addEventListener('click', ()=>{ if(confirm('پاک کردن همه داده‌های محلی؟')){ localStorage.removeItem(POSTS_KEY); renderFeed(); } });
-
-    // simple AI fallback: uses available country info
-    askBtn.addEventListener('click', async ()=>{
-      if(!selected || !selected.country){ alert('ابتدا کشور انتخاب کن'); return }
-      const q = aiQ.value.trim(); if(!q) return; aiAnswer.textContent = 'درحال پردازش...';
-      // simple heuristics
-      const lower = q.toLowerCase();
-      const posts = loadPosts();
-      let answer = '';
-      if(lower.includes('جمعیت')||lower.includes('population')){
-        try{ const rc = await fetch('https://restcountries.com/v3.1/alpha/'+selected.country_code); const arr = await rc.json(); const info = arr?.[0]; answer = info ? `جمعیت ${selected.country} حدود ${info.population?.toLocaleString()||'N/A'} نفر است.` : 'اطلاعات موجود نیست.' }catch(e){ answer='خطا در دریافت اطلاعات.' }
-      } else if(lower.includes('پایتخت')||lower.includes('capital')){
-        try{ const rc = await fetch('https://restcountries.com/v3.1/alpha/'+selected.country_code); const arr = await rc.json(); const info = arr?.[0]; answer = info ? `پایتخت ${selected.country} ${info.capital?.[0]||'N/A'} است.` : 'اطلاعات موجود نیست.' }catch(e){ answer='خطا در دریافت اطلاعات.' }
-      } else {
-        answer = `این یک پاسخ سادهٔ محلی است. دربارهٔ ${selected.country} اطلاعات عمومی را می‌توانید از منابع معتبر مثل Wikipedia یا restcountries.com بخوانید.`
-      }
-      aiAnswer.textContent = answer;
-    });
-  </script>
+function loadFeed(){ feed.innerHTML=''; let p=JSON.parse(localStorage.posts||'[]'); p.forEach(x=>{ let d=document.createElement('div'); d.innerHTML=`<b>${x.user}</b><br><img src='${x.img}' style='width:100%;border-radius:12px;margin-top:10px'>`; feed.appendChild(d); }); }
+</script>
 </body>
 </html>
